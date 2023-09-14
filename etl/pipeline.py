@@ -36,8 +36,7 @@ def run_pipeline(session, config: dict, data_sources: list[Datasource]) -> None:
         staging_path = f"{config['STAGING_BUCKET']}/{source.name}.csv" 
         df.to_csv(staging_path, index=False)
 
-        source.load_func(session, staging_path)
+        source.load_func(session, staging_path, logger)
         logger.info(f"Data loaded from {source.name} to database successfully.")
     session.commit()
     session.close()
-    

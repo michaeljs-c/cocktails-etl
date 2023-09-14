@@ -1,11 +1,10 @@
 import pandas as pd
 from models import Drink, Glass, GlassStock, Transaction, Location
-
 # def load_csv_to_table(engine, csv_file: str, table: str) -> None:
 #     df = pd.read_csv(csv_file)
 #     df.to_sql(TYPES[table].__tablename__, engine, if_exists='append', index=False)
 
-def load_transactions(session, staging_path):
+def load_transactions(session, staging_path, logger):
     df = pd.read_csv(staging_path, parse_dates=['datetime'])
     for _, row in df.iterrows():
         try:
@@ -28,7 +27,7 @@ def load_transactions(session, staging_path):
             raise e
     session.commit()
 
-def load_glasses(session, staging_path):
+def load_glasses(session, staging_path, logger):
     df = pd.read_csv(staging_path)
     for _, row in df.iterrows():
         try:
@@ -49,11 +48,11 @@ def load_glasses(session, staging_path):
                 session.add(glass_stock)
 
         except Exception as e:
-            print(e)
+            logger.error(e)
             raise e
     session.commit()
 
-def load_drinks(session, staging_path):
+def load_drinks(session, staging_path, logger):
     df = pd.read_csv(staging_path)
     for _, row in df.iterrows():
         try:
@@ -68,6 +67,6 @@ def load_drinks(session, staging_path):
                 session.add(drink)
             
         except Exception as e:
-            print(e)
+            logger.error(e)
             raise e
     session.commit()
