@@ -1,16 +1,25 @@
 import logging
 from ingest import ingest_drinks_api_full, ingest_transactions_csv, ingest_bar_csv
-from load import load_csv_to_table
+from load import load_drinks, load_glasses, load_transactions
+from dataclasses import dataclass
+from typing import Callable
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logging.basicConfig(format='%(asctime)s : %(name)s : %(levelname)s : %(message)s')
 
-data_sources = {
-    'transactions': ingest_transactions_csv,
-    'bar': ingest_bar_csv,
-    'drinks': ingest_drinks_api_full
-}
+@dataclass
+class Datasource:
+    name: str
+    ingest_func: Callable[[dict], pd.DataFrame]
+    load_func: Callable
+
+data_sources = [
+    Datasource('glass', ingest_bar_csv, load_glasses),
+    Datasource('drink', ingest_drinks_api_full, load_drinks),
+    Datasource('transactions', ingest_transactions_csv, load_transactions)
+]
 
 def record_metrics(df, df_name, logger):
     logger.info(f"Loading data from {df_name}. Rows: {len(df)}")
@@ -20,11 +29,15 @@ def record_metrics(df, df_name, logger):
         logger.warning(f"Data quality issue in {df_name}: {missing_values} missing values found.")
     
 
-def run_pipeline(config: dict, data_sources: dict) -> None:
-    for data_source, ingest_func in data_sources.items():
-        df = ingest_func(config)
-        record_metrics(df, data_source, logger)
-        df.to_csv(f"{config['STAGING_BUCKET']}/{data_source}.csv", index=False)
+def run_pipeline(session, config: dict, data_sources: list[Datasource]) -> None:
+    for source in data_sources:
+        df = source.ingest_func(config)
+        record_metrics(df, source.name, logger)
+        staging_path = f"{config['STAGING_BUCKET']}/{source.name}.csv" 
+        df.to_csv(staging_path, index=False)
 
-        load_csv_to_table(f"{config['STAGING_BUCKET']}/{data_source}.csv", data_source)
-        logger.info(f"Data loaded from {data_source} to database successfully.")
+        source.load_func(session, staging_path)
+        logger.info(f"Data loaded from {source.name} to database successfully.")
+    session.commit()
+    session.close()
+    

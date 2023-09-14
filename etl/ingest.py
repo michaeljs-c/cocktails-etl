@@ -24,8 +24,9 @@ def ingest_transactions_csv(config: dict) -> pd.DataFrame:
             )
         )
         df['location'] = location
+        
         df_union = pd.concat([df_union, df])
-
+    df_union['drink'] = df['drink'].str.lower()
     return df_union
 
 def ingest_bar_csv(config: dict) -> pd.DataFrame:
@@ -49,6 +50,8 @@ def ingest_drinks_api_full(config: dict) -> pd.DataFrame:
                     )
                 )
     df = pd.DataFrame(rows, columns=config['RAW_DRINKS_COLUMNS'])
+    df['glass_type'] = df['glass_type'].str.lower()
+    df['drink_name'] = df['drink_name'].str.lower()
     return df
 
 def ingest_drinks_api_incremental(config: dict) -> pd.DataFrame:

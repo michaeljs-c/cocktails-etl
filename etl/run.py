@@ -1,5 +1,6 @@
 import config
 from pipeline import run_pipeline, data_sources
+from models import Session, engine
 import argparse
 
 if __name__ == '__main__':
@@ -10,4 +11,4 @@ if __name__ == '__main__':
     # args = parser.parse_args()
         
     conf = config.__dict__
-    run_pipeline(conf, data_sources)
+    run_pipeline(Session(), conf, data_sources)
